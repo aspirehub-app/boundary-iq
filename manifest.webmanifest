@@ -1,0 +1,14 @@
+{
+  "name": "BoundaryIQ - Field Boundary Assistant",
+  "short_name": "BoundaryIQ",
+  "description": "Track your equipment and stay inside your own field. Works offline, no account needed.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f1a13",
+  "theme_color": "#16361f",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

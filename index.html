@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#16361f" />
+  <title>BoundaryIQ - Field Boundary Assistant</title>
+  <link rel="stylesheet" href="vendor/leaflet.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+</head>
+<body>
+  <!-- Big status banner shown during tracking -->
+  <div id="status-banner" class="status-banner hidden" data-state="idle">
+    <div class="status-icon" id="status-icon">●</div>
+    <div class="status-text">
+      <div class="status-title" id="status-title">Ready</div>
+      <div class="status-sub" id="status-sub">Start tracking to begin</div>
+    </div>
+    <div class="status-dist" id="status-dist">-</div>
+  </div>
+
+  <div id="app">
+    <!-- Map -->
+    <div id="map"></div>
+
+    <!-- Floating controls on the map -->
+    <div class="map-fab">
+      <button id="btn-locate" class="fab" title="Center on my location" aria-label="Center on my location">⌖</button>
+      <button id="btn-toggle-panel" class="fab" title="Show / hide panel" aria-label="Toggle panel">☰</button>
+    </div>
+
+    <!-- Side / bottom panel -->
+    <aside id="panel" class="panel">
+      <header class="panel-head">
+        <h1>BoundaryIQ</h1>
+        <p class="tagline">Field boundary assistant for farmers</p>
+      </header>
+
+      <!-- Tabs -->
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="field" role="tab">Field</button>
+        <button class="tab" data-tab="equipment" role="tab">Equipment</button>
+        <button class="tab" data-tab="track" role="tab">Track</button>
+        <button class="tab" data-tab="settings" role="tab">Layers</button>
+      </nav>
+
+      <div class="tab-body">
+        <!-- ===================== FIELD TAB ===================== -->
+        <section class="tab-pane active" data-pane="field">
+          <div class="field-select-row">
+            <select id="field-select" aria-label="Select field"></select>
+            <button id="btn-new-field" class="btn small" title="New field">＋</button>
+            <button id="btn-del-field" class="btn small danger" title="Delete field">🗑</button>
+          </div>
+
+          <label class="lbl">Field name
+            <input type="text" id="field-name" placeholder="e.g. North plot, Site A" />
+          </label>
+
+          <div class="method-card">
+            <h3>1 · Draw on map</h3>
+            <p class="hint">Tap the map to drop corner points around your field. Use a satellite layer for accuracy.</p>
+            <div class="btn-row">
+              <button id="btn-draw" class="btn primary">Start drawing</button>
+              <button id="btn-undo-pt" class="btn">Undo point</button>
+              <button id="btn-finish-draw" class="btn" disabled>Finish</button>
+            </div>
+          </div>
+
+          <div class="method-card">
+            <h3>2 · Walk / drive the border</h3>
+            <p class="hint">Drive around the perimeter; GPS records a corner each time you tap or automatically.</p>
+            <div class="btn-row">
+              <button id="btn-walk" class="btn primary">Start walking</button>
+              <button id="btn-walk-point" class="btn" disabled>Drop GPS point</button>
+              <button id="btn-walk-finish" class="btn" disabled>Finish</button>
+            </div>
+            <label class="checkline">
+              <input type="checkbox" id="walk-auto" /> Auto-record point every
+              <input type="number" id="walk-auto-sec" value="5" min="1" max="60" class="mini" /> s
+            </label>
+          </div>
+
+          <div class="method-card">
+            <h3>3 · Enter coordinates</h3>
+            <p class="hint">One point per line as <code>lat, lng</code> (WGS84 decimal degrees).</p>
+            <textarea id="coords-input" rows="5" placeholder="44.81250, 20.46150&#10;44.81280, 20.46260&#10;44.81190, 20.46300"></textarea>
+            <div class="btn-row">
+              <button id="btn-apply-coords" class="btn primary">Apply coordinates</button>
+              <button id="btn-copy-coords" class="btn">Copy current</button>
+            </div>
+          </div>
+
+          <div class="method-card">
+            <h3>Cadastre helper</h3>
+            <p class="hint">Turn on the cadastre layer (Layers tab), zoom to your parcel, then trace its outline with method 1.</p>
+            <div id="field-stats" class="stats"></div>
+          </div>
+        </section>
+
+        <!-- ===================== TRACTOR TAB ===================== -->
+        <section class="tab-pane" data-pane="equipment">
+          <p class="hint">Set working width and safety margin so the edge of your equipment stays inside the zone.</p>
+
+          <label class="lbl">Implement / working width (m)
+            <input type="number" id="equipment-width" value="3" min="0.5" max="60" step="0.1" />
+          </label>
+          <p class="hint">The full width of the widest part (e.g. plough, sprayer boom, seeder).</p>
+
+          <label class="lbl">Extra safety margin (m)
+            <input type="number" id="equipment-margin" value="0.5" min="0" max="20" step="0.1" />
+          </label>
+          <p class="hint">Added buffer for GPS error and reaction time. The phone GPS is typically accurate to 3-10 m.</p>
+
+          <div class="calc-box">
+            <div><span>Half implement width</span><b id="calc-half">1.50 m</b></div>
+            <div><span>Keep-clear distance from border</span><b id="calc-clear">2.00 m</b></div>
+          </div>
+
+          <label class="checkline">
+            <input type="checkbox" id="show-inner" checked /> Show safe working zone on map
+          </label>
+          <button id="btn-apply-equipment" class="btn primary full">Apply</button>
+        </section>
+
+        <!-- ===================== TRACK TAB ===================== -->
+        <section class="tab-pane" data-pane="track">
+          <p class="hint">Uses your device GPS to track movement and warn you before the implement crosses the field border.</p>
+          <button id="btn-track" class="btn primary full big">▶ Start tracking</button>
+
+          <div class="live-stats">
+            <div class="live-card"><span>Status</span><b id="live-status">-</b></div>
+            <div class="live-card"><span>Distance to border</span><b id="live-dist">-</b></div>
+            <div class="live-card"><span>GPS accuracy</span><b id="live-acc">-</b></div>
+            <div class="live-card"><span>Speed</span><b id="live-speed">-</b></div>
+          </div>
+
+          <div class="alert-opts">
+            <label class="checkline"><input type="checkbox" id="alert-sound" checked /> Sound alarm</label>
+            <label class="checkline"><input type="checkbox" id="alert-vibrate" checked /> Vibrate</label>
+            <label class="checkline"><input type="checkbox" id="alert-keepawake" /> Keep screen awake</label>
+          </div>
+
+          <div class="method-card">
+            <h3>Test mode (no GPS)</h3>
+            <p class="hint">Tap anywhere on the map to simulate a equipment position. Great for trying it out at a desk.</p>
+            <button id="btn-testmode" class="btn">Enable test mode</button>
+          </div>
+        </section>
+
+        <!-- ===================== SETTINGS / LAYERS TAB ===================== -->
+        <section class="tab-pane" data-pane="settings">
+          <h3>Base map</h3>
+          <label class="lbl">Background
+            <select id="base-select">
+              <option value="osm">OpenStreetMap (streets)</option>
+              <option value="sat">Satellite imagery (Esri)</option>
+              <option value="topo">Topographic (OpenTopoMap)</option>
+            </select>
+          </label>
+
+          <h3>Cadastre overlay</h3>
+          <label class="checkline"><input type="checkbox" id="cad-enabled" /> Show cadastral parcels (WMS)</label>
+          <label class="lbl">Source
+            <select id="cad-preset">
+              <option value="geosrbija">Srbija - GeoSrbija / RGZ (INSPIRE)</option>
+              <option value="custom">Custom WMS...</option>
+            </select>
+          </label>
+          <label class="lbl">WMS URL
+            <input type="text" id="cad-url" value="https://inspire.geosrbija.rs/wms/cp" />
+          </label>
+          <label class="lbl">Layer name
+            <input type="text" id="cad-layer" value="CP.CadastralParcel" />
+          </label>
+          <label class="lbl">Opacity <input type="range" id="cad-opacity" min="0.1" max="1" step="0.05" value="0.7" /></label>
+          <button id="btn-apply-cad" class="btn primary full">Apply overlay</button>
+          <p class="hint">Official data from the Republic Geodetic Authority (RGZ) of Serbia. Use as a visual guide to trace your parcel. Always confirm legal boundaries with official documents.</p>
+
+          <h3>Data</h3>
+          <div class="btn-row">
+            <button id="btn-export" class="btn">Export all data</button>
+            <button id="btn-import" class="btn">Import...</button>
+            <input type="file" id="import-file" accept="application/json" hidden />
+          </div>
+          <button id="btn-reset" class="btn danger full">Reset everything</button>
+          <p class="hint">All data is stored only on this device (no account, no server). Export to back up or move to another device.</p>
+        </section>
+      </div>
+
+      <footer class="panel-foot">
+        <span id="save-indicator">Saved on this device</span>
+      </footer>
+    </aside>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="vendor/leaflet.js"></script>
+  <script src="vendor/turf.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
