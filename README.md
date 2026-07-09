@@ -1,4 +1,4 @@
-# BoundaryIQ - Field Boundary Assistant for Farmers
+# BoundaryIQ - Field Boundary Assistant
 
 BoundaryIQ helps a farmer stay inside their **own** field. You enter the field
 boundary and your equipment/implement width once, then the app uses your phone's
@@ -67,7 +67,7 @@ your phone and "Add to Home screen":
    - 🟡 **Approaching border** - slow down (beep + vibrate).
    - ⛔ **Crossing / outside** - steer back (urgent alarm + vibrate).
    - Optional **sound**, **vibration** **keep-screen-awake**.
-   - **Test mode** lets you tap the map to simulate the equipment at your desk.
+   - **Test mode** lets you tap the map to simulate the position at your desk.
 
 ## Cadastre / official data sources
 
