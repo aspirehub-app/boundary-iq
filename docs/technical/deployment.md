@@ -60,7 +60,7 @@ No build command is needed. **Output/publish directory = the project root.**
 ```mermaid
 flowchart LR
     Repo[Static files<br/>index.html, app.js, ...] --> Host[Free HTTPS host]
-    Host --> URL[https://your-app.example]
+    Host --> URL[https://boundary-iq]
     URL --> Phone[Add to Home screen<br/>installable PWA]
 ```
 
