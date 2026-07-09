@@ -25,7 +25,7 @@ flowchart TB
 
     subgraph Net["Network (optional, read-only)"]
         OSM[OSM / Esri / OpenTopoMap tiles]
-        WMS[GeoSrbija INSPIRE WMS]
+        WMS[Custom WMS]
     end
 
     UI --> APP
